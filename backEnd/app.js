@@ -77,10 +77,10 @@ app.get('/', (req, res) => {
     resources: {
       candidates:    '/api/candidates    (CRUD complet)',
       addresses:     '/api/addresses     (CRUD complet)',
-      applications:  '/api/applications  (à implémenter - TP)',
-      jobs:          '/api/jobs          (à implémenter - TP)',
-      notifications: '/api/notifications (à implémenter - TP)',
-      meetings:      '/api/meetings      (à implémenter - TP)'
+      applications:  '/api/applications  (CRUD complet)',
+      jobs:          '/api/jobs          (CRUD complet)',
+      notifications: '/api/notifications (CRUD complet)',
+      meetings:      '/api/meetings      (CRUD complet)'
     }
   });
 });

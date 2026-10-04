@@ -2,53 +2,53 @@
  * ============================================================================
  *  controllers/jobController.js — Contrôleur HTTP pour Job
  * ============================================================================
- *
- *  ⚠️  MODULE À COMPLÉTER PAR LES ÉTUDIANTS ⚠️
- *
- * ----------------------------------------------------------------------------
- *  TP — Ce que vous devez implémenter :
- *
- *    1. Implémenter le CRUD REST complet.
- *    2. Ajouter la validation (name obligatoire, date valide, category_id FK).
- *    3. Documenter avec Swagger (JSDoc @swagger).
- *    4. Ajouter la RECHERCHE par nom (?search=), la PAGINATION (?page, ?limit)
- *       et le filtre par catégorie (?category_id=).
- *    5. Tester avec Postman + Swagger UI + curl.
- *
- *  Endpoints attendus :
- *    GET    /api/jobs                → Liste (avec recherche + pagination)
- *    GET    /api/jobs/:id            → Détail
- *    POST   /api/jobs                → Création
- *    PUT    /api/jobs/:id            → Modification
- *    DELETE /api/jobs/:id            → Suppression
- *
- *  Codes HTTP attendus :
- *    200, 201, 204, 400, 404, 500
- * ============================================================================
  */
 
 'use strict';
 
-// TODO : const jobService = require('../services/jobService');
+const jobService = require('../services/jobService');
 
 async function getAllJobs(req, res, next) {
-  next(new Error('jobController.getAllJobs : à implémenter'));
+  try {
+    const result = await jobService.getAllJobs({
+      page:        req.query.page,
+      limit:       req.query.limit,
+      search:      req.query.search,
+      category_id: req.query.category_id,
+      available:   req.query.available
+    });
+    res.status(200).json(result);
+  } catch (err) { next(err); }
 }
 
 async function getJobById(req, res, next) {
-  next(new Error('jobController.getJobById : à implémenter'));
+  try {
+    const job = await jobService.getJobById(Number(req.params.id));
+    res.status(200).json(job);
+  } catch (err) { next(err); }
 }
 
 async function createJob(req, res, next) {
-  next(new Error('jobController.createJob : à implémenter'));
+  try {
+    const job = await jobService.createJob(req.body);
+    res.status(201)
+       .location(`/api/jobs/${job.id}`)
+       .json(job);
+  } catch (err) { next(err); }
 }
 
 async function updateJob(req, res, next) {
-  next(new Error('jobController.updateJob : à implémenter'));
+  try {
+    const job = await jobService.updateJob(Number(req.params.id), req.body);
+    res.status(200).json(job);
+  } catch (err) { next(err); }
 }
 
 async function deleteJob(req, res, next) {
-  next(new Error('jobController.deleteJob : à implémenter'));
+  try {
+    await jobService.deleteJob(Number(req.params.id));
+    res.status(204).send();
+  } catch (err) { next(err); }
 }
 
 module.exports = {

@@ -2,90 +2,66 @@
  * ============================================================================
  *  models/applicationModel.js — Couche d'accès aux données pour Application
  * ============================================================================
- *
- *  ⚠️  MODULE À COMPLÉTER PAR LES ÉTUDIANTS ⚠️
- *
- *  Rappel du diagramme UML :
- *    Candidate  1 ─── N  Application
- *    Application N ─── 1  Job
- *    Application 1 ─── 1  Meeting
- *    Application 1 ─── 1  Notification
- *
- *  Schéma de la table (voir sql/create_database.sql) :
- *    id (PK), applicationDate, motivation,
- *    candidate_id (FK candidates.id),
- *    job_id (FK jobs.id),
- *    created_at, updated_at
- *
- *  Contrainte d'unicité : (candidate_id, job_id) — un candidat ne postule
- *  qu'une seule fois par offre.
- *
- * ----------------------------------------------------------------------------
- *  TP — Ce que vous devez implémenter :
- *
- *    1. findAll({ page, limit })
- *         SELECT * FROM applications
- *         ORDER BY id ASC
- *         LIMIT ? OFFSET ?
- *         → Bonus : JOIN sur candidates + jobs pour retourner les données
- *                    associées imbriquées (voir candidateModel.js pour l'idée).
- *
- *    2. findById(id)
- *         SELECT * FROM applications WHERE id = ?
- *
- *    3. findByCandidateAndJob(candidateId, jobId)
- *         Utile pour vérifier la contrainte d'unicité avant INSERT.
- *
- *    4. create(data)
- *         INSERT INTO applications (applicationDate, motivation,
- *                                    candidate_id, job_id) VALUES (?, ?, ?, ?)
- *
- *    5. update(id, data)
- *         UPDATE applications SET … WHERE id = ?
- *
- *    6. remove(id)
- *         DELETE FROM applications WHERE id = ?
- *         (le meeting et la notification liés seront supprimés en CASCADE)
- *
- *  N'oubliez pas :
- *    - d'utiliser des requêtes paramétrées (?), jamais de concaténation SQL.
- *    - de gérer le pool depuis `../config/database`.
- *    - d'exporter les fonctions à la fin du fichier.
- * ============================================================================
  */
 
 'use strict';
 
 const { pool } = require('../config/database');
 
-// TODO : implémenter findAll
-async function findAll(/* { page, limit } */) {
-  throw new Error('applicationModel.findAll : à implémenter');
+const COLUMNS = `id, applicationDate, motivation, candidate_id, job_id, created_at, updated_at`;
+
+async function findAll({ page = 1, limit = 20 } = {}) {
+  const offset = (page - 1) * limit;
+  const [rows] = await pool.query(
+    `SELECT ${COLUMNS} FROM applications ORDER BY id ASC LIMIT ? OFFSET ?`,
+    [limit, offset]
+  );
+  const [countRows] = await pool.query(`SELECT COUNT(*) AS total FROM applications`);
+  return { data: rows, total: countRows[0].total };
 }
 
-// TODO : implémenter findById
-async function findById(/* id */) {
-  throw new Error('applicationModel.findById : à implémenter');
+async function findById(id) {
+  const [rows] = await pool.query(
+    `SELECT ${COLUMNS} FROM applications WHERE id = ? LIMIT 1`,
+    [id]
+  );
+  return rows[0] || null;
 }
 
-// TODO : implémenter findByCandidateAndJob (contrainte d'unicité)
-async function findByCandidateAndJob(/* candidateId, jobId */) {
-  throw new Error('applicationModel.findByCandidateAndJob : à implémenter');
+async function findByCandidateAndJob(candidateId, jobId, excludeId = null) {
+  let query = `SELECT id FROM applications WHERE candidate_id = ? AND job_id = ?`;
+  const params = [candidateId, jobId];
+  if (excludeId !== null) {
+    query += ` AND id <> ?`;
+    params.push(excludeId);
+  }
+  const [rows] = await pool.query(query, params);
+  return rows[0] || null;
 }
 
-// TODO : implémenter create
-async function create(/* data */) {
-  throw new Error('applicationModel.create : à implémenter');
+async function create(data) {
+  const [result] = await pool.query(
+    `INSERT INTO applications (applicationDate, motivation, candidate_id, job_id)
+     VALUES (?, ?, ?, ?)`,
+    [data.applicationDate, data.motivation || null, data.candidate_id, data.job_id]
+  );
+  return result.insertId;
 }
 
-// TODO : implémenter update
-async function update(/* id, data */) {
-  throw new Error('applicationModel.update : à implémenter');
+async function update(id, data) {
+  const [result] = await pool.query(
+    `UPDATE applications SET
+        applicationDate = ?, motivation = ?, candidate_id = ?, job_id = ?,
+        updated_at = CURRENT_TIMESTAMP
+     WHERE id = ?`,
+    [data.applicationDate, data.motivation || null, data.candidate_id, data.job_id, id]
+  );
+  return result.affectedRows > 0;
 }
 
-// TODO : implémenter remove
-async function remove(/* id */) {
-  throw new Error('applicationModel.remove : à implémenter');
+async function remove(id) {
+  const [result] = await pool.query(`DELETE FROM applications WHERE id = ?`, [id]);
+  return result.affectedRows > 0;
 }
 
 module.exports = {

@@ -2,51 +2,51 @@
  * ============================================================================
  *  controllers/notificationController.js — Contrôleur HTTP pour Notification
  * ============================================================================
- *
- *  ⚠️  MODULE À COMPLÉTER PAR LES ÉTUDIANTS ⚠️
- *
- * ----------------------------------------------------------------------------
- *  TP — Ce que vous devez implémenter :
- *
- *    1. CRUD REST complet.
- *    2. Gestion spécifique des notifications :
- *         - filtrer par destinataire (?recipient=email@…)
- *         - endpoint bonus : GET /api/notifications/recipient/:email
- *    3. Validation : sender / recipient au format email, content non vide,
- *       application_id doit exister.
- *    4. Swagger doc.
- *
- *  Endpoints attendus :
- *    GET    /api/notifications
- *    GET    /api/notifications/:id
- *    POST   /api/notifications
- *    PUT    /api/notifications/:id
- *    DELETE /api/notifications/:id
- * ============================================================================
  */
 
 'use strict';
 
-// TODO : const notificationService = require('../services/notificationService');
+const notificationService = require('../services/notificationService');
 
 async function getAllNotifications(req, res, next) {
-  next(new Error('notificationController.getAllNotifications : à implémenter'));
+  try {
+    const result = await notificationService.getAllNotifications({
+      page:      req.query.page,
+      limit:     req.query.limit,
+      recipient: req.query.recipient
+    });
+    res.status(200).json(result);
+  } catch (err) { next(err); }
 }
 
 async function getNotificationById(req, res, next) {
-  next(new Error('notificationController.getNotificationById : à implémenter'));
+  try {
+    const notification = await notificationService.getNotificationById(Number(req.params.id));
+    res.status(200).json(notification);
+  } catch (err) { next(err); }
 }
 
 async function createNotification(req, res, next) {
-  next(new Error('notificationController.createNotification : à implémenter'));
+  try {
+    const notification = await notificationService.createNotification(req.body);
+    res.status(201)
+       .location(`/api/notifications/${notification.id}`)
+       .json(notification);
+  } catch (err) { next(err); }
 }
 
 async function updateNotification(req, res, next) {
-  next(new Error('notificationController.updateNotification : à implémenter'));
+  try {
+    const notification = await notificationService.updateNotification(Number(req.params.id), req.body);
+    res.status(200).json(notification);
+  } catch (err) { next(err); }
 }
 
 async function deleteNotification(req, res, next) {
-  next(new Error('notificationController.deleteNotification : à implémenter'));
+  try {
+    await notificationService.deleteNotification(Number(req.params.id));
+    res.status(204).send();
+  } catch (err) { next(err); }
 }
 
 module.exports = {

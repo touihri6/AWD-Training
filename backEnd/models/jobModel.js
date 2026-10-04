@@ -2,63 +2,80 @@
  * ============================================================================
  *  models/jobModel.js — Couche d'accès aux données pour Job
  * ============================================================================
- *
- *  ⚠️  MODULE À COMPLÉTER PAR LES ÉTUDIANTS ⚠️
- *
- *  Rappel du diagramme UML :
- *    Job N ─── 1 Category
- *    Job 1 ─── N Application
- *
- *  Schéma de la table (voir sql/create_database.sql) :
- *    id (PK), name, description, available, date,
- *    category_id (FK categories.id), created_at, updated_at
- *
- * ----------------------------------------------------------------------------
- *  TP — Ce que vous devez implémenter :
- *
- *    1. findAll({ page, limit, search, category_id, available })
- *         Doit gérer :
- *           - recherche (?search=…) sur le nom (LIKE '%…%')
- *           - filtre par catégorie (?category_id=…)
- *           - filtre par disponibilité (?available=true/false)
- *           - tri (?sort=name, -date, …)
- *
- *    2. findById(id)
- *
- *    3. create(data)
- *
- *    4. update(id, data)
- *
- *    5. remove(id)
- *
- *  BONUS :
- *    - findByCategoryId(categoryId) → toutes les offres d'une catégorie.
- *    - JOIN avec la table categories pour retourner le nom de la catégorie.
- * ============================================================================
  */
 
 'use strict';
 
 const { pool } = require('../config/database');
 
-async function findAll(/* options */) {
-  throw new Error('jobModel.findAll : à implémenter');
+const COLUMNS = `id, name, description, available, date, category_id, created_at, updated_at`;
+
+function formatRow(row) {
+  if (!row) return null;
+  return { ...row, available: Boolean(row.available) };
 }
 
-async function findById(/* id */) {
-  throw new Error('jobModel.findById : à implémenter');
+function buildFilters({ search, category_id, available }) {
+  const conditions = [];
+  const params = [];
+  if (search) {
+    conditions.push(`name LIKE ?`);
+    params.push(`%${search}%`);
+  }
+  if (category_id) {
+    conditions.push(`category_id = ?`);
+    params.push(category_id);
+  }
+  if (available !== undefined) {
+    conditions.push(`available = ?`);
+    params.push(available);
+  }
+  const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+  return { where, params };
 }
 
-async function create(/* data */) {
-  throw new Error('jobModel.create : à implémenter');
+async function findAll({ page = 1, limit = 20, search, category_id, available } = {}) {
+  const offset = (page - 1) * limit;
+  const { where, params } = buildFilters({ search, category_id, available });
+  const [rows] = await pool.query(
+    `SELECT ${COLUMNS} FROM jobs ${where} ORDER BY id ASC LIMIT ? OFFSET ?`,
+    [...params, limit, offset]
+  );
+  const [countRows] = await pool.query(`SELECT COUNT(*) AS total FROM jobs ${where}`, params);
+  return { data: rows.map(formatRow), total: countRows[0].total };
 }
 
-async function update(/* id, data */) {
-  throw new Error('jobModel.update : à implémenter');
+async function findById(id) {
+  const [rows] = await pool.query(
+    `SELECT ${COLUMNS} FROM jobs WHERE id = ? LIMIT 1`,
+    [id]
+  );
+  return formatRow(rows[0]);
 }
 
-async function remove(/* id */) {
-  throw new Error('jobModel.remove : à implémenter');
+async function create(data) {
+  const [result] = await pool.query(
+    `INSERT INTO jobs (name, description, available, date, category_id)
+     VALUES (?, ?, ?, ?, ?)`,
+    [data.name, data.description, data.available ?? true, data.date, data.category_id]
+  );
+  return result.insertId;
+}
+
+async function update(id, data) {
+  const [result] = await pool.query(
+    `UPDATE jobs SET
+        name = ?, description = ?, available = ?, date = ?, category_id = ?,
+        updated_at = CURRENT_TIMESTAMP
+     WHERE id = ?`,
+    [data.name, data.description, data.available ?? true, data.date, data.category_id, id]
+  );
+  return result.affectedRows > 0;
+}
+
+async function remove(id) {
+  const [result] = await pool.query(`DELETE FROM jobs WHERE id = ?`, [id]);
+  return result.affectedRows > 0;
 }
 
 module.exports = { findAll, findById, create, update, remove };

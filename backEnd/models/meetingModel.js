@@ -2,70 +2,96 @@
  * ============================================================================
  *  models/meetingModel.js — Couche d'accès aux données pour Meeting
  * ============================================================================
- *
- *  ⚠️  MODULE À COMPLÉTER PAR LES ÉTUDIANTS ⚠️
- *
- *  Rappel du diagramme UML :
- *    Application 1 ─── 1 Meeting
- *
- *  Schéma de la table :
- *    id (PK), reference, link, status,
- *    application_id (FK applications.id, UNIQUE),
- *    created_at, updated_at
- *
- *  Le champ `status` est un ENUM('scheduled', 'held', 'cancelled').
- *
- * ----------------------------------------------------------------------------
- *  TP — Ce que vous devez implémenter :
- *
- *    1. findAll({ page, limit, status })
- *         - filtre optionnel par statut (?status=scheduled)
- *    2. findById(id)
- *    3. findByApplicationId(applicationId)
- *    4. findByReference(reference) — la reference doit être unique
- *    5. create(data)
- *    6. update(id, data)
- *    7. remove(id)
- *
- *  BONUS : machine à états pour le status
- *    scheduled → held      (marquer comme réalisé)
- *    scheduled → cancelled (annuler)
- * ============================================================================
  */
 
 'use strict';
 
 const { pool } = require('../config/database');
 
-async function findAll(/* options */) {
-  throw new Error('meetingModel.findAll : à implémenter');
+const COLUMNS = `id, reference, link, status, application_id, created_at, updated_at`;
+
+async function findAll({ page = 1, limit = 20, status } = {}) {
+  const offset = (page - 1) * limit;
+  const where = status ? `WHERE status = ?` : '';
+  const params = status ? [status] : [];
+  const [rows] = await pool.query(
+    `SELECT ${COLUMNS} FROM meetings ${where} ORDER BY id ASC LIMIT ? OFFSET ?`,
+    [...params, limit, offset]
+  );
+  const [countRows] = await pool.query(`SELECT COUNT(*) AS total FROM meetings ${where}`, params);
+  return { data: rows, total: countRows[0].total };
 }
 
-async function findById(/* id */) {
-  throw new Error('meetingModel.findById : à implémenter');
+async function findById(id) {
+  const [rows] = await pool.query(
+    `SELECT ${COLUMNS} FROM meetings WHERE id = ? LIMIT 1`,
+    [id]
+  );
+  return rows[0] || null;
 }
 
-async function findByApplicationId(/* applicationId */) {
-  throw new Error('meetingModel.findByApplicationId : à implémenter');
+async function findByApplicationId(applicationId, excludeId = null) {
+  let query = `SELECT id FROM meetings WHERE application_id = ?`;
+  const params = [applicationId];
+  if (excludeId !== null) {
+    query += ` AND id <> ?`;
+    params.push(excludeId);
+  }
+  const [rows] = await pool.query(query, params);
+  return rows[0] || null;
 }
 
-async function findByReference(/* reference */) {
-  throw new Error('meetingModel.findByReference : à implémenter');
+async function findByReference(reference, excludeId = null) {
+  let query = `SELECT id FROM meetings WHERE reference = ?`;
+  const params = [reference];
+  if (excludeId !== null) {
+    query += ` AND id <> ?`;
+    params.push(excludeId);
+  }
+  const [rows] = await pool.query(query, params);
+  return rows[0] || null;
 }
 
-async function create(/* data */) {
-  throw new Error('meetingModel.create : à implémenter');
+async function create(data) {
+  const [result] = await pool.query(
+    `INSERT INTO meetings (reference, link, status, application_id)
+     VALUES (?, ?, ?, ?)`,
+    [data.reference, data.link || null, data.status || 'scheduled', data.application_id]
+  );
+  return result.insertId;
 }
 
-async function update(/* id, data */) {
-  throw new Error('meetingModel.update : à implémenter');
+async function update(id, data) {
+  const [result] = await pool.query(
+    `UPDATE meetings SET
+        reference = ?, link = ?, status = ?, application_id = ?,
+        updated_at = CURRENT_TIMESTAMP
+     WHERE id = ?`,
+    [data.reference, data.link || null, data.status, data.application_id, id]
+  );
+  return result.affectedRows > 0;
 }
 
-async function remove(/* id */) {
-  throw new Error('meetingModel.remove : à implémenter');
+async function updateStatus(id, status) {
+  const [result] = await pool.query(
+    `UPDATE meetings SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+    [status, id]
+  );
+  return result.affectedRows > 0;
+}
+
+async function remove(id) {
+  const [result] = await pool.query(`DELETE FROM meetings WHERE id = ?`, [id]);
+  return result.affectedRows > 0;
 }
 
 module.exports = {
-  findAll, findById, findByApplicationId, findByReference,
-  create, update, remove
+  findAll,
+  findById,
+  findByApplicationId,
+  findByReference,
+  create,
+  update,
+  updateStatus,
+  remove
 };

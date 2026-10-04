@@ -2,58 +2,74 @@
  * ============================================================================
  *  models/notificationModel.js — Couche d'accès aux données pour Notification
  * ============================================================================
- *
- *  ⚠️  MODULE À COMPLÉTER PAR LES ÉTUDIANTS ⚠️
- *
- *  Rappel du diagramme UML :
- *    Application 1 ─── 1 Notification
- *
- *  Schéma de la table :
- *    id (PK), sender, recipient, content, date,
- *    application_id (FK applications.id, UNIQUE), created_at
- *
- * ----------------------------------------------------------------------------
- *  TP — Ce que vous devez implémenter :
- *
- *    1. findAll({ page, limit, recipient })
- *         - Filtre optionnel par destinataire (?recipient=email@…)
- *    2. findById(id)
- *    3. findByApplicationId(applicationId)
- *    4. create(data)
- *    5. update(id, data)
- *    6. remove(id)
- * ============================================================================
  */
 
 'use strict';
 
 const { pool } = require('../config/database');
 
-async function findAll(/* options */) {
-  throw new Error('notificationModel.findAll : à implémenter');
+const COLUMNS = `id, sender, recipient, content, date, application_id, created_at`;
+
+async function findAll({ page = 1, limit = 20, recipient } = {}) {
+  const offset = (page - 1) * limit;
+  const where = recipient ? `WHERE recipient = ?` : '';
+  const params = recipient ? [recipient] : [];
+  const [rows] = await pool.query(
+    `SELECT ${COLUMNS} FROM notifications ${where} ORDER BY id ASC LIMIT ? OFFSET ?`,
+    [...params, limit, offset]
+  );
+  const [countRows] = await pool.query(`SELECT COUNT(*) AS total FROM notifications ${where}`, params);
+  return { data: rows, total: countRows[0].total };
 }
 
-async function findById(/* id */) {
-  throw new Error('notificationModel.findById : à implémenter');
+async function findById(id) {
+  const [rows] = await pool.query(
+    `SELECT ${COLUMNS} FROM notifications WHERE id = ? LIMIT 1`,
+    [id]
+  );
+  return rows[0] || null;
 }
 
-async function findByApplicationId(/* applicationId */) {
-  throw new Error('notificationModel.findByApplicationId : à implémenter');
+async function findByApplicationId(applicationId, excludeId = null) {
+  let query = `SELECT id FROM notifications WHERE application_id = ?`;
+  const params = [applicationId];
+  if (excludeId !== null) {
+    query += ` AND id <> ?`;
+    params.push(excludeId);
+  }
+  const [rows] = await pool.query(query, params);
+  return rows[0] || null;
 }
 
-async function create(/* data */) {
-  throw new Error('notificationModel.create : à implémenter');
+async function create(data) {
+  const [result] = await pool.query(
+    `INSERT INTO notifications (sender, recipient, content, date, application_id)
+     VALUES (?, ?, ?, ?, ?)`,
+    [data.sender, data.recipient, data.content, data.date, data.application_id]
+  );
+  return result.insertId;
 }
 
-async function update(/* id, data */) {
-  throw new Error('notificationModel.update : à implémenter');
+async function update(id, data) {
+  const [result] = await pool.query(
+    `UPDATE notifications SET
+        sender = ?, recipient = ?, content = ?, date = ?, application_id = ?
+     WHERE id = ?`,
+    [data.sender, data.recipient, data.content, data.date, data.application_id, id]
+  );
+  return result.affectedRows > 0;
 }
 
-async function remove(/* id */) {
-  throw new Error('notificationModel.remove : à implémenter');
+async function remove(id) {
+  const [result] = await pool.query(`DELETE FROM notifications WHERE id = ?`, [id]);
+  return result.affectedRows > 0;
 }
 
 module.exports = {
-  findAll, findById, findByApplicationId,
-  create, update, remove
+  findAll,
+  findById,
+  findByApplicationId,
+  create,
+  update,
+  remove
 };

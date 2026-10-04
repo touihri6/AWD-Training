@@ -4,12 +4,12 @@
  * ============================================================================
  *
  *  Cette version monte :
- *    - /api/candidates      → CRUD complet (fourni)
- *    - /api/addresses       → CRUD complet (fourni)
- *    - /api/applications    → 501 Not Implemented (TP étudiants)
- *    - /api/jobs            → 501 Not Implemented (TP étudiants)
- *    - /api/notifications   → 501 Not Implemented (TP étudiants)
- *    - /api/meetings        → 501 Not Implemented (TP étudiants)
+ *    - /api/candidates      → CRUD complet
+ *    - /api/addresses       → CRUD complet
+ *    - /api/applications    → CRUD complet
+ *    - /api/jobs            → CRUD complet
+ *    - /api/notifications   → CRUD complet
+ *    - /api/meetings        → CRUD complet
  * ============================================================================
  */
 
@@ -18,11 +18,8 @@
 const express = require('express');
 const router  = express.Router();
 
-// -- Modules implémentés --
-const candidateRoutes = require('./candidateRoutes');
-const addressRoutes   = require('./addressRoutes');
-
-// -- Modules squelettes (à compléter par les étudiants) --
+const candidateRoutes    = require('./candidateRoutes');
+const addressRoutes      = require('./addressRoutes');
 const applicationRoutes  = require('./applicationRoutes');
 const jobRoutes          = require('./jobRoutes');
 const notificationRoutes = require('./notificationRoutes');

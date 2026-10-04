@@ -2,52 +2,58 @@
  * ============================================================================
  *  controllers/meetingController.js — Contrôleur HTTP pour Meeting
  * ============================================================================
- *
- *  ⚠️  MODULE À COMPLÉTER PAR LES ÉTUDIANTS ⚠️
- *
- * ----------------------------------------------------------------------------
- *  TP — Ce que vous devez implémenter :
- *
- *    1. CRUD REST complet.
- *    2. Gestion des réunions :
- *         - reference doit être unique (contrainte 409 Conflict).
- *         - status ne peut passer que d'un état valide à un autre.
- *         - endpoint bonus : PATCH /api/meetings/:id/status pour changer
- *           uniquement le statut.
- *    3. Validation : reference obligatoire, link URL valide, status ENUM.
- *    4. Swagger doc.
- *
- *  Endpoints attendus :
- *    GET    /api/meetings
- *    GET    /api/meetings/:id
- *    POST   /api/meetings
- *    PUT    /api/meetings/:id
- *    DELETE /api/meetings/:id
- * ============================================================================
  */
 
 'use strict';
 
-// TODO : const meetingService = require('../services/meetingService');
+const meetingService = require('../services/meetingService');
 
 async function getAllMeetings(req, res, next) {
-  next(new Error('meetingController.getAllMeetings : à implémenter'));
+  try {
+    const result = await meetingService.getAllMeetings({
+      page:   req.query.page,
+      limit:  req.query.limit,
+      status: req.query.status
+    });
+    res.status(200).json(result);
+  } catch (err) { next(err); }
 }
 
 async function getMeetingById(req, res, next) {
-  next(new Error('meetingController.getMeetingById : à implémenter'));
+  try {
+    const meeting = await meetingService.getMeetingById(Number(req.params.id));
+    res.status(200).json(meeting);
+  } catch (err) { next(err); }
 }
 
 async function createMeeting(req, res, next) {
-  next(new Error('meetingController.createMeeting : à implémenter'));
+  try {
+    const meeting = await meetingService.createMeeting(req.body);
+    res.status(201)
+       .location(`/api/meetings/${meeting.id}`)
+       .json(meeting);
+  } catch (err) { next(err); }
 }
 
 async function updateMeeting(req, res, next) {
-  next(new Error('meetingController.updateMeeting : à implémenter'));
+  try {
+    const meeting = await meetingService.updateMeeting(Number(req.params.id), req.body);
+    res.status(200).json(meeting);
+  } catch (err) { next(err); }
+}
+
+async function updateMeetingStatus(req, res, next) {
+  try {
+    const meeting = await meetingService.updateMeetingStatus(Number(req.params.id), req.body.status);
+    res.status(200).json(meeting);
+  } catch (err) { next(err); }
 }
 
 async function deleteMeeting(req, res, next) {
-  next(new Error('meetingController.deleteMeeting : à implémenter'));
+  try {
+    await meetingService.deleteMeeting(Number(req.params.id));
+    res.status(204).send();
+  } catch (err) { next(err); }
 }
 
 module.exports = {
@@ -55,5 +61,6 @@ module.exports = {
   getMeetingById,
   createMeeting,
   updateMeeting,
+  updateMeetingStatus,
   deleteMeeting
 };
