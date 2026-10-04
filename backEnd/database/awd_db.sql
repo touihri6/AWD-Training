@@ -13,6 +13,8 @@ CREATE DATABASE IF NOT EXISTS awd_db
 USE awd_db;
 
 -- Drop in reverse order of the foreign keys
+DROP TABLE IF EXISTS notification;
+DROP TABLE IF EXISTS meeting;
 DROP TABLE IF EXISTS application;
 DROP TABLE IF EXISTS candidate;
 DROP TABLE IF EXISTS address;
@@ -110,6 +112,39 @@ CREATE TABLE application (
         ON DELETE RESTRICT
 ) ENGINE = InnoDB;
 
+CREATE TABLE meeting (
+    id             BIGINT       NOT NULL AUTO_INCREMENT,
+    reference      VARCHAR(50)  NOT NULL,
+    link           VARCHAR(500) NULL,
+    status         VARCHAR(20)  NOT NULL DEFAULT 'SCHEDULED',
+    application_id BIGINT       NOT NULL,
+    created_at     DATETIME(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    updated_at     DATETIME(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+    CONSTRAINT pk_meeting PRIMARY KEY (id),
+    CONSTRAINT uk_meeting_reference UNIQUE (reference),
+    CONSTRAINT uk_meeting_application UNIQUE (application_id),
+    CONSTRAINT ck_meeting_status CHECK (status IN ('SCHEDULED', 'HELD', 'CANCELLED')),
+    CONSTRAINT fk_meeting_application FOREIGN KEY (application_id)
+        REFERENCES application (id)
+        ON DELETE CASCADE
+) ENGINE = InnoDB;
+
+CREATE TABLE notification (
+    id             BIGINT        NOT NULL AUTO_INCREMENT,
+    sender         VARCHAR(150)  NOT NULL,
+    recipient      VARCHAR(150)  NOT NULL,
+    content        VARCHAR(5000) NOT NULL,
+    `date`         DATETIME(6)   NOT NULL,
+    application_id BIGINT        NOT NULL,
+    created_at     DATETIME(6)   NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    CONSTRAINT pk_notification PRIMARY KEY (id),
+    CONSTRAINT uk_notification_application UNIQUE (application_id),
+    INDEX idx_notification_recipient (recipient),
+    CONSTRAINT fk_notification_application FOREIGN KEY (application_id)
+        REFERENCES application (id)
+        ON DELETE CASCADE
+) ENGINE = InnoDB;
+
 -- =====================================================================
 --  Sample data
 -- =====================================================================
@@ -142,3 +177,13 @@ INSERT INTO application (application_date, motivation, candidate_id, job_id) VAL
   ('2026-09-15', 'Interested in backend development as well.',              2, 1),
   ('2026-09-20', 'Strong SQL skills and Power BI certification.',           3, 3),
   ('2026-09-22', 'Hands-on experience with Docker and GitHub Actions.',     1, 5);
+
+INSERT INTO meeting (reference, link, status, application_id) VALUES
+  ('MEET-2026-001', 'https://meet.example.com/awd-001', 'HELD',      1),
+  ('MEET-2026-002', 'https://meet.example.com/awd-002', 'SCHEDULED', 2),
+  ('MEET-2026-003', NULL,                               'CANCELLED', 4);
+
+INSERT INTO notification (sender, recipient, content, `date`, application_id) VALUES
+  ('hr@awd.tn', 'amine.bensalah@example.com', 'Your application for Java Spring Boot Developer has been received.', '2026-09-12 10:00:00', 1),
+  ('hr@awd.tn', 'sarra.trabelsi@example.com', 'Your application for Angular Developer has been received.',         '2026-09-14 09:30:00', 2),
+  ('hr@awd.tn', 'yassine.gharbi@example.com', 'Your application for Data Analyst has been received.',              '2026-09-20 14:15:00', 4);

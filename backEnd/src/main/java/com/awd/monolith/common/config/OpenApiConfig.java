@@ -21,7 +21,7 @@ public class OpenApiConfig {
                         .title("AWD Recruitment API (monolith)")
                         .version("1.0.0")
                         .description("Monolithic RESTful version of the AWD project: candidate management, " +
-                                "job management and candidature management in one Spring Boot application " +
+                                "job management, candidature management, meetings and notifications in one Spring Boot application " +
                                 "with one MySQL database. Starting point before the migration to microservices.")
                         .contact(new Contact().name("Badia Abouhdid")))
                 .servers(List.of(new Server().url("http://localhost:" + port).description("Local")));
@@ -51,5 +51,17 @@ public class OpenApiConfig {
     public GroupedOpenApi candidatureApi() {
         return GroupedOpenApi.builder().group("3-candidature")
                 .packagesToScan("com.awd.monolith.candidature.controller").build();
+    }
+
+    @Bean
+    public GroupedOpenApi meetingApi() {
+        return GroupedOpenApi.builder().group("4-meeting")
+                .packagesToScan("com.awd.monolith.meeting.controller").build();
+    }
+
+    @Bean
+    public GroupedOpenApi notificationApi() {
+        return GroupedOpenApi.builder().group("5-notification")
+                .packagesToScan("com.awd.monolith.notification.controller").build();
     }
 }

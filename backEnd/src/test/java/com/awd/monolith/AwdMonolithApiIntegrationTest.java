@@ -26,7 +26,7 @@ class AwdMonolithApiIntegrationTest {
 
     // ---------- helpers ----------
 
-    private long post(String url, String body) throws Exception {
+    private long create(String url, String body) throws Exception {
         String json = mvc.perform(post(url).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
@@ -34,15 +34,15 @@ class AwdMonolithApiIntegrationTest {
     }
 
     private long candidate(String email) throws Exception {
-        return post("/api/candidates", """
+        return create("/api/candidates", """
                 {"firstname":"Badia","lastname":"Abouhdid","email":"%s",
                  "address":{"street":"Avenue Habib Bourguiba","houseNumber":"12","zipCode":"1001"}}
                 """.formatted(email));
     }
 
     private long job(String name, boolean available) throws Exception {
-        long cat = post("/api/categories", "{\"name\":\"Cat " + name + "\"}");
-        return post("/api/jobs", """
+        long cat = create("/api/categories", "{\"name\":\"Cat " + name + "\"}");
+        return create("/api/jobs", """
                 {"name":"%s","description":"d","available":%s,"date":"2026-09-01","categoryId":%d}
                 """.formatted(name, available, cat));
     }
@@ -74,7 +74,7 @@ class AwdMonolithApiIntegrationTest {
     void applyToJobAndReadIt() throws Exception {
         long c = candidate("a@example.com");
         long j = job("Java Dev", true);
-        long id = post("/api/applications", application(c, j));
+        long id = create("/api/applications", application(c, j));
 
         mvc.perform(get("/api/applications/" + id))
                 .andExpect(status().isOk())
@@ -102,7 +102,7 @@ class AwdMonolithApiIntegrationTest {
         long open = job("Open", true);
         long closed = job("Closed", false);
 
-        post("/api/applications", application(c, open));
+        create("/api/applications", application(c, open));
         mvc.perform(post("/api/applications").contentType(MediaType.APPLICATION_JSON).content(application(c, open)))
                 .andExpect(status().isConflict());
         mvc.perform(post("/api/applications").contentType(MediaType.APPLICATION_JSON).content(application(c, closed)))
@@ -128,9 +128,9 @@ class AwdMonolithApiIntegrationTest {
         long c2 = candidate("b@example.com");
         long j1 = job("Java Dev", true);
         long j2 = job("Angular Dev", true);
-        post("/api/applications", application(c1, j1));
-        post("/api/applications", application(c1, j2));
-        post("/api/applications", application(c2, j1));
+        create("/api/applications", application(c1, j1));
+        create("/api/applications", application(c1, j2));
+        create("/api/applications", application(c2, j1));
 
         mvc.perform(get("/api/applications")).andExpect(jsonPath("$.length()").value(3));
         mvc.perform(get("/api/applications?candidateId=" + c1)).andExpect(jsonPath("$.length()").value(2));
@@ -143,7 +143,7 @@ class AwdMonolithApiIntegrationTest {
     void updateAndDeleteApplication() throws Exception {
         long c = candidate("a@example.com");
         long j = job("Java Dev", true);
-        long id = post("/api/applications", application(c, j));
+        long id = create("/api/applications", application(c, j));
 
         mvc.perform(put("/api/applications/" + id).contentType(MediaType.APPLICATION_JSON)
                         .content("{\"motivation\":\"New text\",\"applicationDate\":\"2026-09-21\"}"))
@@ -159,7 +159,7 @@ class AwdMonolithApiIntegrationTest {
     void candidateOrJobWithApplicationsCannotBeDeleted() throws Exception {
         long c = candidate("a@example.com");
         long j = job("Java Dev", true);
-        long id = post("/api/applications", application(c, j));
+        long id = create("/api/applications", application(c, j));
 
         mvc.perform(delete("/api/candidates/" + c)).andExpect(status().isConflict());
         mvc.perform(delete("/api/jobs/" + j)).andExpect(status().isConflict());
@@ -169,6 +169,116 @@ class AwdMonolithApiIntegrationTest {
         mvc.perform(delete("/api/jobs/" + j)).andExpect(status().isNoContent());
     }
 
+    private String meeting(String reference, long applicationId) {
+        return """
+                {"reference":"%s","link":"https://meet.example.com/x","applicationId":%d}
+                """.formatted(reference, applicationId);
+    }
+
+    @Test
+    void scheduleMeetingAndFollowItsStatus() throws Exception {
+        long app = create("/api/applications", application(candidate("a@example.com"), job("Java Dev", true)));
+        long id = create("/api/meetings", meeting("MEET-1", app));
+
+        mvc.perform(get("/api/meetings/" + id))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("SCHEDULED"))
+                .andExpect(jsonPath("$.application.id").value(app))
+                .andExpect(jsonPath("$.application.candidateEmail").value("a@example.com"));
+
+        mvc.perform(patch("/api/meetings/" + id + "/status").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"HELD\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("HELD"));
+        mvc.perform(patch("/api/meetings/" + id + "/status").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"CANCELLED\"}"))
+                .andExpect(status().isConflict());
+
+        mvc.perform(get("/api/meetings?status=HELD")).andExpect(jsonPath("$.length()").value(1));
+        mvc.perform(get("/api/meetings?status=SCHEDULED")).andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    void meetingRules() throws Exception {
+        long c = candidate("a@example.com");
+        long app1 = create("/api/applications", application(c, job("Java Dev", true)));
+        long app2 = create("/api/applications", application(c, job("Angular Dev", true)));
+        long id = create("/api/meetings", meeting("MEET-1", app1));
+
+        mvc.perform(post("/api/meetings").contentType(MediaType.APPLICATION_JSON).content(meeting("MEET-1", app2)))
+                .andExpect(status().isConflict());
+        mvc.perform(post("/api/meetings").contentType(MediaType.APPLICATION_JSON).content(meeting("MEET-2", app1)))
+                .andExpect(status().isConflict());
+        mvc.perform(post("/api/meetings").contentType(MediaType.APPLICATION_JSON).content(meeting("MEET-2", 999)))
+                .andExpect(status().isNotFound());
+        mvc.perform(post("/api/meetings").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"link\":\"not-a-url\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.reference").exists())
+                .andExpect(jsonPath("$.errors.link").exists())
+                .andExpect(jsonPath("$.errors.applicationId").exists());
+
+        mvc.perform(put("/api/meetings/" + id).contentType(MediaType.APPLICATION_JSON).content(meeting("MEET-1B", app1)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.reference").value("MEET-1B"));
+
+        mvc.perform(delete("/api/meetings/" + id)).andExpect(status().isNoContent());
+        mvc.perform(get("/api/meetings/" + id)).andExpect(status().isNotFound());
+    }
+
+    private String notification(String recipient, long applicationId) {
+        return """
+                {"sender":"hr@awd.tn","recipient":"%s","content":"Application received",
+                 "date":"2026-09-25T10:00:00","applicationId":%d}
+                """.formatted(recipient, applicationId);
+    }
+
+    @Test
+    void notificationCrudAndFilter() throws Exception {
+        long c = candidate("a@example.com");
+        long app1 = create("/api/applications", application(c, job("Java Dev", true)));
+        long app2 = create("/api/applications", application(c, job("Angular Dev", true)));
+        long id = create("/api/notifications", notification("A@Example.com", app1));
+        create("/api/notifications", notification("b@example.com", app2));
+
+        mvc.perform(get("/api/notifications/" + id))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.recipient").value("a@example.com"))
+                .andExpect(jsonPath("$.date").value("2026-09-25T10:00:00"))
+                .andExpect(jsonPath("$.applicationId").value(app1));
+        mvc.perform(get("/api/notifications")).andExpect(jsonPath("$.length()").value(2));
+        mvc.perform(get("/api/notifications?recipient=a@example.com")).andExpect(jsonPath("$.length()").value(1));
+
+        mvc.perform(post("/api/notifications").contentType(MediaType.APPLICATION_JSON).content(notification("c@example.com", app1)))
+                .andExpect(status().isConflict());
+        mvc.perform(post("/api/notifications").contentType(MediaType.APPLICATION_JSON).content(notification("c@example.com", 999)))
+                .andExpect(status().isNotFound());
+        mvc.perform(post("/api/notifications").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"sender\":\"nope\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.sender").exists())
+                .andExpect(jsonPath("$.errors.recipient").exists())
+                .andExpect(jsonPath("$.errors.date").exists());
+
+        mvc.perform(put("/api/notifications/" + id).contentType(MediaType.APPLICATION_JSON).content(notification("z@example.com", app1)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.recipient").value("z@example.com"));
+
+        mvc.perform(delete("/api/notifications/" + id)).andExpect(status().isNoContent());
+        mvc.perform(get("/api/notifications/" + id)).andExpect(status().isNotFound());
+    }
+
+    @Test
+    void deletingApplicationAlsoDeletesItsMeetingAndNotification() throws Exception {
+        long app = create("/api/applications", application(candidate("a@example.com"), job("Java Dev", true)));
+        long m = create("/api/meetings", meeting("MEET-1", app));
+        long n = create("/api/notifications", notification("a@example.com", app));
+
+        mvc.perform(delete("/api/applications/" + app)).andExpect(status().isNoContent());
+        mvc.perform(get("/api/meetings/" + m)).andExpect(status().isNotFound());
+        mvc.perform(get("/api/notifications/" + n)).andExpect(status().isNotFound());
+    }
+
     @Test
     void swaggerDocsExposeAllModules() throws Exception {
         mvc.perform(get("/v3/api-docs/0-all"))
@@ -176,7 +286,15 @@ class AwdMonolithApiIntegrationTest {
                 .andExpect(jsonPath("$.info.title").value("AWD Recruitment API (monolith)"))
                 .andExpect(jsonPath("$.paths['/api/candidates']").exists())
                 .andExpect(jsonPath("$.paths['/api/jobs']").exists())
-                .andExpect(jsonPath("$.paths['/api/applications']").exists());
+                .andExpect(jsonPath("$.paths['/api/applications']").exists())
+                .andExpect(jsonPath("$.paths['/api/meetings']").exists())
+                .andExpect(jsonPath("$.paths['/api/notifications']").exists());
+        mvc.perform(get("/v3/api-docs/4-meeting"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.paths['/api/meetings/{id}/status']").exists());
+        mvc.perform(get("/v3/api-docs/5-notification"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.paths['/api/notifications/{id}']").exists());
         mvc.perform(get("/v3/api-docs/3-candidature"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.paths['/api/applications/{id}']").exists());

@@ -96,7 +96,7 @@ public class ApplicationService {
         applicationRepository.delete(getApplication(id));
     }
 
-    private Application getApplication(Long id) {
+    public Application getApplication(Long id) {
         return applicationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Application", id));
     }
