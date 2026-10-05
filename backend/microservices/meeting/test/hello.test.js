@@ -39,5 +39,3 @@ test('unknown route returns 404 JSON', async () => {
   assert.equal(res.status, 404);
   assert.equal((await res.json()).status, 404);
 });
-
-// TODO (students): add tests for the Meeting CRUD endpoints.

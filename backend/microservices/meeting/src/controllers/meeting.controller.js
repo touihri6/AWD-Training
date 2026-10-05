@@ -1,26 +1,42 @@
-/**
- * Meeting controller.
- *
- * Only `hello` is implemented. The meeting logic is a TODO for students (see TODO.md).
- */
+const meetingService = require('../services/meeting.service');
+const candidateService = require('../services/candidate.service');
 
 const hello = (req, res) => {
   res.status(200).json({ message: "hello I'm microservice meeting" });
 };
 
-// TODO (students): implement the Meeting logic.
-// No database: keep meetings in memory, for example:
-//
-// let meetings = [];
-// let nextId = 1;
-//
-// const findAll = (req, res) => { ... };
-// const findById = (req, res) => { ... };   // 404 if not found
-// const create = (req, res) => { ... };     // 400 if invalid, 201 + created meeting
-// const update = (req, res) => { ... };     // 404 / 400 / 200
-// const remove = (req, res) => { ... };     // 404 / 204
+const findCandidate = async (req, res) => {
+  const { status, body } = await candidateService.findById(req.params.id);
+  res.status(status).json(body);
+};
+
+const findAll = (req, res) => {
+  res.status(200).json(meetingService.findAll(req.query));
+};
+
+const findById = (req, res) => {
+  res.status(200).json(meetingService.findById(req.params.id));
+};
+
+const create = async (req, res) => {
+  res.status(201).json(await meetingService.create(req.body));
+};
+
+const update = async (req, res) => {
+  res.status(200).json(await meetingService.update(req.params.id, req.body));
+};
+
+const remove = (req, res) => {
+  meetingService.remove(req.params.id);
+  res.status(204).end();
+};
 
 module.exports = {
   hello,
-  // TODO (students): export findAll, findById, create, update, remove
+  findCandidate,
+  findAll,
+  findById,
+  create,
+  update,
+  remove,
 };

@@ -29,5 +29,3 @@ def test_swagger_ui_is_served():
 def test_unknown_route_returns_404():
     assert client.get("/api/unknown").status_code == 404
 
-
-# TODO (students): add tests for the Notification endpoints.

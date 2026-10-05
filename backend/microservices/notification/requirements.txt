@@ -1,2 +1,4 @@
 fastapi>=0.115
 uvicorn[standard]>=0.30
+py-eureka-client>=0.13
+httpx>=0.27
