@@ -2,6 +2,7 @@ package com.awd.candidat.controller;
 
 import com.awd.candidat.dto.CandidateRequest;
 import com.awd.candidat.dto.CandidateResponse;
+import com.awd.candidat.dto.JobResponse;
 import com.awd.candidat.service.CandidateService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -103,5 +104,49 @@ public class CandidateController {
             content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
     public CandidateResponse removeAddress(@Parameter(description = "Candidate id", example = "1") @PathVariable Long id) {
         return candidateService.removeAddress(id);
+    }
+
+    @GetMapping("/jobs")
+    @Operation(summary = "List the jobs of the job microservice", description = "Read through OpenFeign (JOB in Eureka).")
+    @ApiResponse(responseCode = "200", description = "List of jobs")
+    @ApiResponse(responseCode = "503", description = "Job microservice unavailable",
+            content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
+    public List<JobResponse> getAllJobs() {
+        return candidateService.getJobs();
+    }
+
+    @GetMapping("/jobs/{jobId}")
+    @Operation(summary = "Get a job of the job microservice by id", description = "Read through OpenFeign (JOB in Eureka).")
+    @ApiResponse(responseCode = "200", description = "Job found")
+    @ApiResponse(responseCode = "404", description = "Job not found",
+            content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
+    @ApiResponse(responseCode = "503", description = "Job microservice unavailable",
+            content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
+    public JobResponse getJobById(@Parameter(description = "Job id", example = "1") @PathVariable Long jobId) {
+        return candidateService.getJobById(jobId);
+    }
+
+    @GetMapping("/{id}/favorite-jobs")
+    @Operation(summary = "List the favorite jobs of a candidate")
+    @ApiResponse(responseCode = "200", description = "Favorite jobs of the candidate")
+    @ApiResponse(responseCode = "404", description = "Candidate or job not found",
+            content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
+    @ApiResponse(responseCode = "503", description = "Job microservice unavailable",
+            content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
+    public List<JobResponse> getFavoriteJobs(@Parameter(description = "Candidate id", example = "1") @PathVariable Long id) {
+        return candidateService.getFavoriteJobs(id);
+    }
+
+    @PostMapping("/{id}/favorite-jobs/{jobId}")
+    @Operation(summary = "Add a job to the favorites of a candidate", description = "The job must exist in the job microservice.")
+    @ApiResponse(responseCode = "200", description = "Job saved as favorite")
+    @ApiResponse(responseCode = "404", description = "Candidate or job not found",
+            content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
+    @ApiResponse(responseCode = "503", description = "Job microservice unavailable",
+            content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
+    public ResponseEntity<String> saveFavoriteJob(@Parameter(description = "Candidate id", example = "1") @PathVariable Long id,
+                                                  @Parameter(description = "Job id", example = "1") @PathVariable Long jobId) {
+        candidateService.saveFavoriteJob(id, jobId);
+        return ResponseEntity.ok("Job saved as favorite successfully.");
     }
 }

@@ -1,5 +1,6 @@
 package com.awd.candidat.exception;
 
+import feign.FeignException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -24,6 +25,16 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ConflictException.class)
     public ProblemDetail handleConflict(ConflictException ex) {
         return problem(HttpStatus.CONFLICT, "Conflict", ex.getMessage());
+    }
+
+    @ExceptionHandler(FeignException.NotFound.class)
+    public ProblemDetail handleRemoteNotFound(FeignException.NotFound ex) {
+        return problem(HttpStatus.NOT_FOUND, "Resource not found", "Job not found in the job microservice");
+    }
+
+    @ExceptionHandler(FeignException.class)
+    public ProblemDetail handleRemoteUnavailable(FeignException ex) {
+        return problem(HttpStatus.SERVICE_UNAVAILABLE, "Service unavailable", "The job microservice is unavailable");
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

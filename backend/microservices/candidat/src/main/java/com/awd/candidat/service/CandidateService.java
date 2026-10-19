@@ -1,7 +1,9 @@
 package com.awd.candidat.service;
 
+import com.awd.candidat.client.JobClient;
 import com.awd.candidat.dto.CandidateRequest;
 import com.awd.candidat.dto.CandidateResponse;
+import com.awd.candidat.dto.JobResponse;
 import com.awd.candidat.entity.Address;
 import com.awd.candidat.entity.Candidate;
 import com.awd.candidat.exception.ConflictException;
@@ -19,10 +21,12 @@ public class CandidateService {
 
     private final CandidateRepository candidateRepository;
     private final AddressService addressService;
+    private final JobClient jobClient;
 
-    public CandidateService(CandidateRepository candidateRepository, AddressService addressService) {
+    public CandidateService(CandidateRepository candidateRepository, AddressService addressService, JobClient jobClient) {
         this.candidateRepository = candidateRepository;
         this.addressService = addressService;
+        this.jobClient = jobClient;
     }
 
     @Transactional(readOnly = true)
@@ -85,6 +89,28 @@ public class CandidateService {
         Candidate candidate = getCandidate(candidateId);
         candidate.setAddress(null);
         return CandidatMapper.toResponse(candidateRepository.saveAndFlush(candidate));
+    }
+
+    public List<JobResponse> getJobs() {
+        return jobClient.getAllJobs();
+    }
+
+    public JobResponse getJobById(Long id) {
+        return jobClient.getJobById(id);
+    }
+
+    @Transactional(readOnly = true)
+    public List<JobResponse> getFavoriteJobs(Long candidateId) {
+        return getCandidate(candidateId).getFavoriteJobs().stream()
+                .sorted()
+                .map(jobClient::getJobById)
+                .toList();
+    }
+
+    public void saveFavoriteJob(Long candidateId, Long jobId) {
+        Candidate candidate = getCandidate(candidateId);
+        jobClient.getJobById(jobId);
+        candidate.getFavoriteJobs().add(jobId);
     }
 
     private Candidate getCandidate(Long id) {

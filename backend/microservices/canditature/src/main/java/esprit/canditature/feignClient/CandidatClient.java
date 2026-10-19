@@ -15,5 +15,5 @@ public interface CandidatClient {
 
     // Must be the exact path exposed by the candidat controller
     @GetMapping("/mic1/candidates/{id}")
-    Candidate findById(@PathVariable("id") int id);
+    Candidate findById(@PathVariable("id") Long id);
 }
