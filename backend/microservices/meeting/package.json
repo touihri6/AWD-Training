@@ -6,14 +6,20 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
-    "test": "node --test test/"
+    "test": "node --test"
   },
   "engines": {
     "node": ">=18"
   },
-  "keywords": ["microservice", "express", "swagger", "meeting"],
+  "keywords": [
+    "microservice",
+    "express",
+    "swagger",
+    "meeting"
+  ],
   "license": "MIT",
   "dependencies": {
+    "amqplib": "^0.10.9",
     "express": "^5.1.0",
     "swagger-ui-express": "^5.0.1"
   }

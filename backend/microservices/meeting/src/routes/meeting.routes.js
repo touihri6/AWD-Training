@@ -6,6 +6,9 @@ const router = Router();
 // GET /api/meetings/hello
 router.get('/hello', meetingController.hello);
 
+router.get('/', meetingController.findAll);
+router.get('/:id', meetingController.findById);
+
 // TODO (students): add the Meeting CRUD routes here, for example:
 // router.get('/', meetingController.findAll);
 // router.get('/:id', meetingController.findById);

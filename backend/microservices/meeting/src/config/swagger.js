@@ -38,6 +38,45 @@ module.exports = {
       },
     },
 
+    '/api/meetings': {
+      get: {
+        tags: ['Meetings'],
+        summary: 'List the meetings',
+        description: 'Meetings created from the ApplicationSubmitted events consumed from RabbitMQ.',
+        operationId: 'findAllMeetings',
+        responses: {
+          200: {
+            description: 'List of meetings',
+            content: {
+              'application/json': {
+                schema: { type: 'array', items: { $ref: '#/components/schemas/Meeting' } },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/api/meetings/{id}': {
+      get: {
+        tags: ['Meetings'],
+        summary: 'Get one meeting',
+        operationId: 'findMeetingById',
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'integer', example: 1 } },
+        ],
+        responses: {
+          200: {
+            description: 'The meeting',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/Meeting' } } },
+          },
+          404: {
+            description: 'Meeting not found',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
+          },
+        },
+      },
+    },
+
     // TODO (students): document the CRUD routes, for example:
     // '/api/meetings': { get: {...}, post: {...} },
     // '/api/meetings/{id}': { get: {...}, put: {...}, delete: {...} },
@@ -50,6 +89,22 @@ module.exports = {
           message: { type: 'string', example: "hello I'm microservice meeting" },
         },
         required: ['message'],
+      },
+
+      Meeting: {
+        type: 'object',
+        properties: {
+          id: { type: 'integer', example: 1 },
+          title: { type: 'string', example: 'Interview with Lina Mansour - Java Spring Boot Developer' },
+          date: { type: 'string', format: 'date-time', nullable: true, example: null },
+          status: { type: 'string', enum: ['TO_SCHEDULE', 'SCHEDULED', 'DONE', 'CANCELLED'], example: 'TO_SCHEDULE' },
+          candidateId: { type: 'integer', example: 4 },
+          jobId: { type: 'integer', example: 1 },
+          applicationId: { type: 'integer', example: 6 },
+          eventId: { type: 'string', example: '3f2a8c1e-5b7d-4e2a-9c1f-0a6b2d4e8f10' },
+          createdAt: { type: 'string', format: 'date-time', example: '2026-10-26T10:00:00.000Z' },
+        },
+        required: ['id', 'title', 'status', 'candidateId', 'jobId'],
       },
 
       // TODO (students): add the Meeting schema, for example:

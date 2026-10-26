@@ -1,0 +1,16 @@
+target/
+!**/src/main/**/target/
+!**/src/test/**/target/
+.mvn/wrapper/maven-wrapper.jar
+
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+node_modules/
+npm-debug.log*
+
+.env
+*.log
