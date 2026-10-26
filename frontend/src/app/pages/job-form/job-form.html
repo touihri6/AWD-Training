@@ -1,0 +1,53 @@
+<header class="page-header">
+  <div>
+    <h1>New job offer</h1>
+    <p class="muted">The offer is visible to candidates as soon as it is open.</p>
+  </div>
+</header>
+
+@if (error()) {
+  <div class="alert error" role="alert">{{ error() }}</div>
+}
+
+<form class="card form" [formGroup]="form" (ngSubmit)="save()">
+  <label for="name">Title</label>
+  <input id="name" type="text" formControlName="name" placeholder="Java Spring Boot Developer" />
+  @if (form.controls.name.touched && form.controls.name.invalid) {
+    <small class="field-error">A title (max 100 characters) is required.</small>
+  }
+
+  <label for="description">Description</label>
+  <textarea id="description" rows="5" formControlName="description" placeholder="Build microservices with Spring Boot"></textarea>
+  @if (form.controls.description.invalid) {
+    <small class="field-error">Max 1000 characters.</small>
+  }
+
+  <div class="row">
+    <div class="field">
+      <label for="category">Category</label>
+      <select id="category" formControlName="categoryId">
+        <option [ngValue]="0" disabled>Choose a category</option>
+        @for (category of categories(); track category.id) {
+          <option [ngValue]="category.id">{{ category.name }}</option>
+        }
+      </select>
+      @if (form.controls.categoryId.touched && form.controls.categoryId.invalid) {
+        <small class="field-error">Choose a category.</small>
+      }
+    </div>
+    <div class="field">
+      <label for="date">Publication date</label>
+      <input id="date" type="date" formControlName="date" />
+    </div>
+  </div>
+
+  <label class="checkbox">
+    <input type="checkbox" formControlName="available" />
+    Open to applications
+  </label>
+
+  <div class="actions">
+    <button type="submit" class="button primary" [disabled]="saving()">Publish</button>
+    <a class="button ghost" routerLink="/jobs">Cancel</a>
+  </div>
+</form>

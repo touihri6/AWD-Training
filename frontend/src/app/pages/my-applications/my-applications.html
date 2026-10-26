@@ -1,0 +1,39 @@
+<header class="page-header">
+  <div>
+    <h1>My applications</h1>
+    <p class="muted">Follow the positions you applied to.</p>
+  </div>
+</header>
+
+@if (notice()) {
+  <div class="alert success" role="status">{{ notice() }}</div>
+}
+@if (error()) {
+  <div class="alert error" role="alert">{{ error() }}</div>
+}
+
+@if (loading()) {
+  <p class="muted">Loading your applications…</p>
+} @else if (candidate() === null) {
+  <div class="alert info">
+    You do not have a candidate profile yet.
+    <a routerLink="/profile">Create my profile</a>
+  </div>
+} @else {
+  <ul class="list">
+    @for (application of applications(); track application.id) {
+      <li class="card list-item">
+        <div>
+          <h2>{{ application.job.name }}</h2>
+          <p class="meta">Applied on {{ application.applicationDate | date: 'mediumDate' }}</p>
+          <p class="quote">“{{ application.motivation }}”</p>
+        </div>
+        <button type="button" class="button danger" (click)="withdraw(application)">Withdraw</button>
+      </li>
+    } @empty {
+      <li class="empty">
+        You have not applied yet. <a routerLink="/jobs">Browse the open positions</a>.
+      </li>
+    }
+  </ul>
+}

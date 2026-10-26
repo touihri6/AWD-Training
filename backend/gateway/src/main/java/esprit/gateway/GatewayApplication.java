@@ -23,6 +23,8 @@ public class GatewayApplication {
                 .uri("lb://CANDITATURE") )
                 .route("job", r->r.path("/mic2/**")
                         .uri("lb://JOB") )
+                .route("categories", r->r.path("/api/categories/**")
+                        .uri("lb://JOB") )
                 .build();
          }
 }

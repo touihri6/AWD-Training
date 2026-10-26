@@ -1,0 +1,54 @@
+<header class="page-header">
+  <div>
+    <h1>Applications</h1>
+    <p class="muted">Every application received on the JobBoard.</p>
+  </div>
+</header>
+
+@if (error()) {
+  <div class="alert error" role="alert">{{ error() }}</div>
+}
+
+<div class="toolbar">
+  <label class="select grow">
+    <span>Search</span>
+    <input type="search" placeholder="Job, candidate name or e-mail" [value]="search()" (input)="search.set($any($event.target).value)" />
+  </label>
+</div>
+
+@if (loading()) {
+  <p class="muted">Loading applications…</p>
+} @else {
+  <div class="table-wrap card">
+    <table>
+      <thead>
+        <tr>
+          <th>N°</th>
+          <th>Candidate</th>
+          <th>Job</th>
+          <th>Date</th>
+          <th>Motivation</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (application of filtered(); track application.id) {
+          <tr>
+            <td>{{ application.id }}</td>
+            <td>
+              <strong>{{ application.candidate.firstname }} {{ application.candidate.lastname }}</strong>
+              <br />
+              <a href="mailto:{{ application.candidate.email }}">{{ application.candidate.email }}</a>
+            </td>
+            <td>{{ application.job.name }}</td>
+            <td class="nowrap">{{ application.applicationDate | date: 'mediumDate' }}</td>
+            <td class="motivation">{{ application.motivation }}</td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="5" class="empty">No application yet.</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}

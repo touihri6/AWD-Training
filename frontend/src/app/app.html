@@ -1,0 +1,31 @@
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" routerLink="/jobs">Job<span>Board</span></a>
+
+    <nav class="nav" aria-label="Main">
+      <a routerLink="/jobs" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Jobs</a>
+      @if (auth.isCandidate()) {
+        <a routerLink="/my-applications" routerLinkActive="active">My applications</a>
+        <a routerLink="/profile" routerLinkActive="active">My profile</a>
+      }
+      @if (auth.isRecruiter()) {
+        <a routerLink="/jobs/new" routerLinkActive="active">New job</a>
+        <a routerLink="/applications" routerLinkActive="active">Applications</a>
+      }
+    </nav>
+
+    <div class="user">
+      <div class="user-text">
+        <span class="user-name">{{ displayName() }}</span>
+        @if (roleLabel()) {
+          <span class="role">{{ roleLabel() }}</span>
+        }
+      </div>
+      <button type="button" class="button ghost small" (click)="logout()">Sign out</button>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+  <router-outlet />
+</main>

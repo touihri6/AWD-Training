@@ -93,6 +93,17 @@ class SecurityRulesTest {
     }
 
     @Test
+    void anyUserCanReadCategoriesButOnlyRecruitersChangeThem() {
+        as("CANDIDATE").get().uri("/api/categories").exchange()
+                .expectStatus().isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
+        as("CANDIDATE").post().uri("/api/categories").contentType(MediaType.APPLICATION_JSON).bodyValue("{}")
+                .exchange().expectStatus().isForbidden();
+        as("RECRUITER").post().uri("/api/categories").contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("{\"name\":\"Data\"}")
+                .exchange().expectStatus().isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
+    }
+
+    @Test
     void userWithoutRoleCannotApply() {
         as().post().uri("/mic3/candidature").contentType(MediaType.APPLICATION_JSON).bodyValue("{}")
                 .exchange().expectStatus().isForbidden();

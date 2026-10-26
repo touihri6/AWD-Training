@@ -1,0 +1,82 @@
+<header class="page-header">
+  <div>
+    <h1>My candidate profile</h1>
+    <p class="muted">Your profile is linked to your account by your e-mail address.</p>
+  </div>
+</header>
+
+@if (error()) {
+  <div class="alert error" role="alert">{{ error() }}</div>
+}
+
+@if (loading()) {
+  <p class="muted">Loading your profile…</p>
+} @else if (candidate(); as me) {
+  <section class="card">
+    <dl class="details">
+      <dt>Name</dt>
+      <dd>{{ me.firstname }} {{ me.lastname }}</dd>
+      <dt>E-mail</dt>
+      <dd>{{ me.email }}</dd>
+      <dt>Address</dt>
+      <dd>
+        @if (me.address) {
+          {{ me.address.houseNumber }} {{ me.address.street }} {{ me.address.zipCode }}
+        } @else {
+          <span class="muted">Not provided</span>
+        }
+      </dd>
+      <dt>Candidate n°</dt>
+      <dd>{{ me.id }}</dd>
+    </dl>
+    <div class="actions">
+      <a class="button primary" routerLink="/jobs">Browse jobs</a>
+    </div>
+  </section>
+} @else {
+  <form class="card form" [formGroup]="form" (ngSubmit)="create()">
+    <p>You do not have a candidate profile yet. Create it to start applying.</p>
+
+    <div class="row">
+      <div class="field">
+        <label for="firstname">First name</label>
+        <input id="firstname" type="text" formControlName="firstname" />
+        @if (form.controls.firstname.touched && form.controls.firstname.invalid) {
+          <small class="field-error">Required.</small>
+        }
+      </div>
+      <div class="field">
+        <label for="lastname">Last name</label>
+        <input id="lastname" type="text" formControlName="lastname" />
+        @if (form.controls.lastname.touched && form.controls.lastname.invalid) {
+          <small class="field-error">Required.</small>
+        }
+      </div>
+    </div>
+
+    <label for="email">E-mail</label>
+    <input id="email" type="email" [value]="email" disabled />
+
+    <fieldset>
+      <legend>Address (optional)</legend>
+      <div class="row">
+        <div class="field">
+          <label for="street">Street</label>
+          <input id="street" type="text" formControlName="street" />
+        </div>
+        <div class="field small">
+          <label for="houseNumber">N°</label>
+          <input id="houseNumber" type="text" formControlName="houseNumber" />
+        </div>
+        <div class="field small">
+          <label for="zipCode">Zip code</label>
+          <input id="zipCode" type="text" formControlName="zipCode" />
+        </div>
+      </div>
+    </fieldset>
+
+    <div class="actions">
+      <button type="submit" class="button primary" [disabled]="saving()">Create my profile</button>
+    </div>
+  </form>
+}

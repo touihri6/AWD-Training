@@ -33,6 +33,9 @@ public class SecurityConfig {
                         .pathMatchers(HttpMethod.PUT, "/mic2/jobs/**").hasRole(RECRUITER)
                         .pathMatchers(HttpMethod.PATCH, "/mic2/jobs/**").hasRole(RECRUITER)
                         .pathMatchers(HttpMethod.DELETE, "/mic2/jobs/**").hasRole(RECRUITER)
+                        .pathMatchers(HttpMethod.POST, "/api/categories/**").hasRole(RECRUITER)
+                        .pathMatchers(HttpMethod.PUT, "/api/categories/**").hasRole(RECRUITER)
+                        .pathMatchers(HttpMethod.DELETE, "/api/categories/**").hasRole(RECRUITER)
                         .anyExchange().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))

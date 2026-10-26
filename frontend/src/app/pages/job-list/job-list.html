@@ -1,0 +1,103 @@
+<header class="page-header">
+  <div>
+    <h1>Job offers</h1>
+    <p class="muted">
+      @if (auth.isRecruiter()) {
+        Publish, open, close and delete the offers of the JobBoard.
+      } @else {
+        Browse the open positions and apply in one click.
+      }
+    </p>
+  </div>
+  @if (auth.isRecruiter()) {
+    <a class="button primary" routerLink="/jobs/new">New job</a>
+  }
+</header>
+
+@if (needsProfile()) {
+  <div class="alert info">
+    Create your candidate profile before applying.
+    <a routerLink="/profile">Create my profile</a>
+  </div>
+}
+@if (notice()) {
+  <div class="alert success" role="status">{{ notice() }}</div>
+}
+@if (error()) {
+  <div class="alert error" role="alert">{{ error() }}</div>
+}
+
+<div class="toolbar">
+  <label class="checkbox">
+    <input type="checkbox" [checked]="openOnly()" (change)="setOpenOnly($any($event.target).checked)" />
+    Open positions only
+  </label>
+  <label class="select">
+    <span>Category</span>
+    <select (change)="setCategory($any($event.target).value)">
+      <option value="">All categories</option>
+      @for (category of categories(); track category.id) {
+        <option [value]="category.id">{{ category.name }}</option>
+      }
+    </select>
+  </label>
+</div>
+
+@if (loading()) {
+  <p class="muted">Loading jobs…</p>
+} @else {
+  <ul class="job-grid">
+    @for (job of jobs(); track job.id) {
+      <li class="card job">
+        <div class="job-head">
+          <h2>{{ job.name }}</h2>
+          <span class="badge" [class.open]="job.available" [class.closed]="!job.available">
+            {{ job.available ? 'Open' : 'Closed' }}
+          </span>
+        </div>
+        <p class="meta">
+          @if (job.category) {
+            <span>{{ job.category.name }}</span> ·
+          }
+          <span>Published {{ job.date | date: 'mediumDate' }}</span>
+        </p>
+        @if (job.description) {
+          <p class="description">{{ job.description }}</p>
+        }
+
+        @if (auth.isCandidate() && job.available) {
+          @if (applyingTo() === job.id) {
+            <form class="apply-form" (ngSubmit)="apply(job)">
+              <label for="motivation-{{ job.id }}">Why are you a good fit?</label>
+              <textarea id="motivation-{{ job.id }}" rows="4" [formControl]="motivation"></textarea>
+              @if (motivation.touched && motivation.invalid) {
+                <small class="field-error">A motivation (max 1000 characters) is required.</small>
+              }
+              <div class="actions">
+                <button type="submit" class="button primary" [disabled]="busy()">Send my application</button>
+                <button type="button" class="button ghost" (click)="cancelApplying()">Cancel</button>
+              </div>
+            </form>
+          } @else {
+            <div class="actions">
+              <button type="button" class="button primary" [disabled]="!candidate()" (click)="startApplying(job)">
+                Apply
+              </button>
+            </div>
+          }
+        }
+
+        @if (auth.isRecruiter()) {
+          <div class="actions">
+            <button type="button" class="button" [disabled]="busy()" (click)="toggleAvailability(job)">
+              {{ job.available ? 'Close' : 'Reopen' }}
+            </button>
+            <button type="button" class="button danger" [disabled]="busy()" (click)="remove(job)">Delete</button>
+          </div>
+        }
+      </li>
+    } @empty {
+      <li class="empty">No job matches these filters.</li>
+    }
+  </ul>
+}
