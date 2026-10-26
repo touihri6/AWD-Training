@@ -1,0 +1,54 @@
+{
+  "realm": "jobboard",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "accessTokenLifespan": 300,
+  "roles": {
+    "realm": [
+      { "name": "CANDIDATE", "description": "Candidate of the JobBoard: applies to job offers" },
+      { "name": "RECRUITER", "description": "Recruiter of the JobBoard: publishes and manages job offers" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "jobboard-front",
+      "name": "JobBoard front-end",
+      "enabled": true,
+      "publicClient": true,
+      "protocol": "openid-connect",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "implicitFlowEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": ["http://localhost:4200/*"],
+      "webOrigins": ["http://localhost:4200"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:4200/*"
+      }
+    }
+  ],
+  "users": [
+    {
+      "username": "lina",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Lina",
+      "lastName": "Mansour",
+      "email": "lina.mansour@example.com",
+      "credentials": [{ "type": "password", "value": "lina", "temporary": false }],
+      "realmRoles": ["CANDIDATE"]
+    },
+    {
+      "username": "sami",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Sami",
+      "lastName": "Recruiter",
+      "email": "sami.recruiter@example.com",
+      "credentials": [{ "type": "password", "value": "sami", "temporary": false }],
+      "realmRoles": ["RECRUITER"]
+    }
+  ]
+}
