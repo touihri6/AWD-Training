@@ -1,0 +1,171 @@
+name: jobboard
+
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./backend/microservices/job/database/job_db.sql:/docker-entrypoint-initdb.d/01-job_db.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - jobboard-net
+
+  rabbitmq:
+    image: rabbitmq:4.3-management
+    hostname: jobboard-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: awd
+      RABBITMQ_DEFAULT_PASS: awd
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+    networks:
+      - jobboard-net
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0.7
+    command: start-dev --import-realm
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_HOSTNAME: http://localhost:8180
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+    ports:
+      - "8180:8080"
+    volumes:
+      - ./backend/keycloak:/opt/keycloak/data/import:ro
+    networks:
+      - jobboard-net
+
+  discovery:
+    build: ./backend/discovery
+    ports:
+      - "8761:8761"
+    networks:
+      - jobboard-net
+
+  gateway:
+    build: ./backend/gateway
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery:8761/eureka/
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://localhost:8180/realms/jobboard
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/jobboard/protocol/openid-connect/certs
+    ports:
+      - "8080:8080"
+    depends_on:
+      - discovery
+      - keycloak
+    networks:
+      - jobboard-net
+
+  candidat:
+    build: ./backend/microservices/candidat
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery:8761/eureka/
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+    ports:
+      - "8081:8081"
+    depends_on:
+      - discovery
+    networks:
+      - jobboard-net
+
+  job:
+    build: ./backend/microservices/job
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery:8761/eureka/
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/job_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+    ports:
+      - "8082:8082"
+    depends_on:
+      discovery:
+        condition: service_started
+      mysql:
+        condition: service_healthy
+    networks:
+      - jobboard-net
+
+  candidature:
+    build: ./backend/microservices/candidature-service
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery:8761/eureka/
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/candidature_db3?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      SPRING_RABBITMQ_HOST: rabbitmq
+    ports:
+      - "8085:8085"
+    depends_on:
+      discovery:
+        condition: service_started
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - jobboard-net
+
+  meeting:
+    build: ./backend/microservices/meeting
+    environment:
+      PORT: "8083"
+      RABBITMQ_URL: amqp://awd:awd@rabbitmq:5672
+    ports:
+      - "8083:8083"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - jobboard-net
+
+  notification:
+    build: ./backend/microservices/notification-service
+    environment:
+      PORT: "8084"
+      RABBITMQ_URL: amqp://awd:awd@rabbitmq:5672/
+      EUREKA_SERVER: http://discovery:8761/eureka
+    ports:
+      - "8084:8084"
+    depends_on:
+      discovery:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - jobboard-net
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "4200:80"
+    depends_on:
+      - gateway
+      - keycloak
+    networks:
+      - jobboard-net
+
+networks:
+  jobboard-net:
+
+volumes:
+  mysql-data:
+  rabbitmq-data:
